@@ -7,7 +7,6 @@ import os
 import pandas as pd
 from datetime import datetime
 
-# SİMÜLASYON YAPILANDIRMASI (CONFIG)
 ARKAPLAN_DOSYASI = "harita.png"
 EKRAN_GENISLIK = 1400
 EKRAN_YUKSEKLIK = 800
@@ -36,7 +35,7 @@ font_orta = pygame.font.SysFont("Consolas", 16, bold=True)
 font_buyuk = pygame.font.SysFont("Consolas", 22, bold=True)
 font_baslik = pygame.font.SysFont("Consolas", 26, bold=True)
 
-# --- KAPAK EKRANI ---
+
 def kapak_ekrani():
     giris = True
     while giris:
@@ -61,7 +60,6 @@ def kapak_ekrani():
 
 kapak_ekrani()
 
-# Harita Yükleme
 harita_katmani = pygame.Surface((HARITA_GENISLIK, EKRAN_YUKSEKLIK))
 harita_katmani.fill(RENK_ARKA_PLAN)
 if os.path.exists(ARKAPLAN_DOSYASI):
@@ -204,24 +202,19 @@ def excel_disa_aktar(veriler):
         worksheet = writer.sheets['Veri_Analizi']
         worksheet.freeze_panes(1, 0)
         
-        # --- PRO FORMATLAR ---
         header_fmt = workbook.add_format({'bold': True, 'font_color': 'white', 'bg_color': '#1F4E78', 'border': 1, 'align': 'center'})
         num_fmt = workbook.add_format({'align': 'center', 'num_format': '#,##0.0'})
         
-        # Başlıkları formatla ve sütunları genişlet
         for col_num, value in enumerate(df.columns.values):
             worksheet.write(0, col_num, value, header_fmt)
             worksheet.set_column(col_num, col_num, 15, num_fmt)
 
-        # --- KOŞULLU BİÇİMLENDİRME (PİLLER) ---
-        # Ort_Batarya sütununu (3. sütun) bul ve 0-100 arası renklendir
         worksheet.conditional_format(1, 2, len(df), 2, {
             'type': '2_color_scale',
             'min_color': "#FF0000",
             'max_color': "#00FF00"
         })
 
-        # --- GRAFİK 1: SİSTEM PERFORMANSI ---
         chart_perf = workbook.add_chart({'type': 'line'})
         chart_perf.add_series({
             'name': 'Aktif Sensör Sayısı',
@@ -234,17 +227,15 @@ def excel_disa_aktar(veriler):
         chart_perf.set_y_axis({'name': 'Cihaz Sayısı'})
         worksheet.insert_chart('H2', chart_perf, {'x_scale': 1.8, 'y_scale': 1.5})
 
-        # --- GRAFİK 2: YÜK DAĞILIMI (TÜM SENSÖRLER) ---
         chart_load = workbook.add_chart({'type': 'area', 'subtype': 'stacked'})
         for i, col in enumerate(df.columns):
             if 'AnlikYuk' in col:
                 chart_load.add_series({
                     'name': col.replace('_AnlikYuk', ''),
-                    'categories': ['Veri_Analizi', 1, 0, len(df), 0], # X Ekseni (Zaman)
-                    'values':     ['Veri_Analizi', 1, i, len(df), i], # Y Ekseni (Yük)
+                    'categories': ['Veri_Analizi', 1, 0, len(df), 0], 
+                    'values':     ['Veri_Analizi', 1, i, len(df), i], 
                 })
 
-        # --- EKSEN BAŞLIKLARI BURADA ---
         chart_load.set_title({'name': 'Kümülatif Ağ Trafik Yükü (Düğüm Bazlı)'})
         chart_load.set_x_axis({
             'name': 'Simülasyon Süresi (Saat)',
@@ -257,7 +248,7 @@ def excel_disa_aktar(veriler):
             'major_gridlines': {'visible': True}
         })
 
-        # Grafiği rapora yerleştir
+
         worksheet.insert_chart('H28', chart_load, {'x_scale': 1.8, 'y_scale': 1.5})
 
         writer.close()
@@ -277,9 +268,8 @@ veri_kayitlari = []
 son_kayit_zamani = 0.0
 KAYIT_ARALIGI = 0.5 
 
-# Anlık Grafik Verileri (Excel'den bağımsız canlı grafik için)
 anlik_grafik_verisi = []
-MAKS_ANLIK_VERI = 150 # Grafikte gösterilecek anlık nokta sayısı
+MAKS_ANLIK_VERI = 150
 
 zaman_carpanlari = [1, 5, 20, 60, 300, 1200]
 hiz_indeksi = radar_yari_cap = aktif_sayfa = 0
@@ -300,13 +290,11 @@ btn_excel = ArayuzButonu(HARITA_GENISLIK + 40, 700, 270, 40, "EXCEL'E AKTAR (GRA
 btn_reset = ArayuzButonu(HARITA_GENISLIK + 40, 750, 270, 40, "SİSTEMİ SIFIRLA", (180, 50, 50))
 kontrol_butonlari = [btn_baslat, btn_hiz_eksi, btn_hiz_arti, btn_sensor_ekle, btn_sensor_sil, btn_sayfa_geri, btn_sayfa_ileri, btn_excel, btn_reset]
 
-# --- ANA DÖNGÜ ---
 while True:
     ekran.fill(RENK_ARKA_PLAN)
     fare_pos = pygame.mouse.get_pos()
     toplam_sayfa = max(1, math.ceil(len(sensor_listesi) / SAYFA_BASI_SENSOR))
-    
-    # --- ARKA PLAN AĞ ANALİZİ ---
+
     for s in sensor_listesi: s.yuk_miktari = 1 
     for s in sensor_listesi:
         s.rota_bul(sensor_listesi, merkez_istasyon_konumu)
@@ -317,7 +305,7 @@ while True:
         toplam_simulasyon_saati += zaman_artisi
         simulasyon_saati = toplam_simulasyon_saati % 24.0
         
-        # EXCEL İÇİN SAATLİK (ARALIKLI) KAYIT
+
         if toplam_simulasyon_saati - son_kayit_zamani >= KAYIT_ARALIGI:
             aktif_say = len([s for s in sensor_listesi if s.batarya_seviyesi > 0])
             ort_batarya = sum([s.batarya_seviyesi for s in sensor_listesi]) / len(sensor_listesi) if sensor_listesi else 0
@@ -334,7 +322,7 @@ while True:
             veri_kayitlari.append(kayit_satiri)
             son_kayit_zamani = toplam_simulasyon_saati
 
-        # ARAYÜZ GRAFİĞİ İÇİN ANLIK (REAL-TIME) KAYIT (Her Karede/FPS)
+
         anlik_yuk_toplami = sum(s.yuk_miktari for s in sensor_listesi if s.batarya_seviyesi > 0)
         anlik_batarya_ort = sum([s.batarya_seviyesi for s in sensor_listesi]) / max(1, len(sensor_listesi))
         anlik_grafik_verisi.append({'yuk': anlik_yuk_toplami, 'batarya': anlik_batarya_ort})
@@ -351,7 +339,7 @@ while True:
         coord_txt = font_kucuk.render(f"{42.050 + j/1000:.3f}N", True, (120, 140, 160))
         ekran.blit(coord_txt, (5, j + 5 if j > 0 else 20))
 
-    # Olay Yönetimi
+
     for olay in pygame.event.get():
         if olay.type == pygame.QUIT: pygame.quit(); sys.exit()
         if olay.type == pygame.MOUSEBUTTONDOWN and olay.button == 1:
@@ -412,7 +400,6 @@ while True:
     pygame.draw.circle(ekran, RENK_TURKUAZ, merkez_istasyon_konumu, 20, 2)
     ekran.blit(font_orta.render("MERKEZ ÜS", True, RENK_TURKUAZ), (merkez_istasyon_konumu[0]-35, merkez_istasyon_konumu[1]+25))
 
-    # --- PANEL ÇİZİMİ ---
     pygame.draw.rect(ekran, RENK_PANEL, (HARITA_GENISLIK, 0, PANEL_GENISLIK, EKRAN_YUKSEKLIK))
     pygame.draw.line(ekran, RENK_TURKUAZ, (HARITA_GENISLIK, 0), (HARITA_GENISLIK, EKRAN_YUKSEKLIK), 2)
     btn_sekme_kontrol.guncelle(fare_pos); btn_sekme_kontrol.ciz(ekran, (panel_sekmesi==0))
@@ -446,18 +433,18 @@ while True:
             renk_yazi = RENK_TURKUAZ if i==0 else (RENK_KIRMIZI if i==3 and kapsama_orani < 50 else RENK_BEYAZ)
             ekran.blit(font_orta.render(r, True, renk_yazi), (HARITA_GENISLIK + 35, 550 + i*25))
 
-    # --- YENİLENMİŞ DETAYLI GRAFİK SEKMESİ (DÖNGÜ İÇİNDEKİ KISIM) ---
+
     elif panel_sekmesi == 1:
         g_x, g_y, g_w, g_h = HARITA_GENISLIK + 20, 70, PANEL_GENISLIK - 40, 700
         pygame.draw.rect(ekran, (18, 22, 28), (g_x, g_y, g_w, g_h), border_radius=8)
         
-        # Üst Bilgi Alanı
+
         ekran.blit(font_buyuk.render("CANLI SİSTEM ANALİZİ", True, RENK_TURKUAZ), (g_x + 15, g_y + 15))
         
-        # 1. OSİLOSKOP (ÇİZGİ GRAFİK)
+
         cizim_x, cizim_y, cizim_w, cizim_h = g_x + 35, g_y + 80, g_w - 70, 180
         pygame.draw.rect(ekran, (10, 15, 20), (cizim_x, cizim_y, cizim_w, cizim_h))
-        for i in range(1, 5): # Yatay ızgara
+        for i in range(1, 5):
             hy = cizim_y + (cizim_h // 5) * i
             pygame.draw.line(ekran, (30, 40, 50), (cizim_x, hy), (cizim_x + cizim_w, hy), 1)
 
@@ -466,7 +453,7 @@ while True:
             pts_bat = []
             for i, v in enumerate(anlik_grafik_verisi):
                 nx = cizim_x + (i / (MAKS_ANLIK_VERI-1)) * cizim_w
-                # Normalizasyon
+
                 y_yuk = cizim_y + cizim_h - (v["yuk"] / max(30, len(sensor_listesi)*2)) * cizim_h
                 y_bat = cizim_y + cizim_h - (v["batarya"] / 100) * cizim_h
                 pts_yuk.append((nx, y_yuk))
@@ -475,7 +462,7 @@ while True:
             pygame.draw.lines(ekran, RENK_TURKUAZ, False, pts_yuk, 2)
             pygame.draw.lines(ekran, RENK_YESIL, False, pts_bat, 2)
 
-        # 2. SENSÖR BAZLI BAR GRAFİĞİ (DİNAMİK ÖLÇEKLENDİRME)
+
         bar_y_base = cizim_y + cizim_h + 80
         bar_h_max = 280
         ekran.blit(font_orta.render("Düğüm Başına Toplam Veri Transferi", True, RENK_SARI), (cizim_x, bar_y_base - 30))
@@ -487,39 +474,39 @@ while True:
             bw = (available_w / n) - gap
             max_p = max([s.toplam_paket for s in sensor_listesi]) or 1
             
-            # Sensör sayısı çoksa etiketleri seyrelt (Örn: 50 sensör varsa her 5 tanede bir yaz)
+
             etiket_adimi = 1 if n <= 15 else (2 if n <= 30 else 5)
 
             for i, s in enumerate(sensor_listesi):
                 bx = cizim_x + 10 + i * (bw + gap)
                 bh = (s.toplam_paket / max_p) * (bar_h_max - 60)
                 
-                # Bar Çizimi
+
                 b_renk = RENK_TURKUAZ if s.batarya_seviyesi > 0 else RENK_KIRMIZI
                 if s.secili: b_renk = RENK_MOR
                 
                 pygame.draw.rect(ekran, b_renk, (bx, bar_y_base + bar_h_max - bh - 30, bw, bh), border_radius=2)
                 
-                # Etiketleme Mantığı (Sıkışmayı önler)
+
                 if i % etiket_adimi == 0:
                     id_txt = font_kucuk.render(f"{s.id}", True, RENK_GRI)
                     ekran.blit(id_txt, id_txt.get_rect(center=(bx + bw/2, bar_y_base + bar_h_max - 15)))
                     
-                    if n < 25: # Sadece sensör azsa tepesine değer yaz
+                    if n < 25: 
                         val_txt = font_kucuk.render(f"{int(s.toplam_paket)}", True, RENK_BEYAZ)
                         ekran.blit(val_txt, val_txt.get_rect(center=(bx + bw/2, bar_y_base + bar_h_max - bh - 45)))
 
-        # --- ALT GRAFİK: SENSÖR YÜK DAĞILIMI BAR GRAFİĞİ (Korundu) ---
+
         bar_y = cizim_y + cizim_h + 80
         bar_h = 240
         ekran.blit(font_orta.render("Sensör Başına Taşınan Toplam Veri Paketi", True, RENK_SARI), (cizim_x, bar_y - 25))
         pygame.draw.rect(ekran, (10, 15, 20), (cizim_x, bar_y, cizim_w, bar_h))
 
         if sensor_listesi:
-            maks_paket = max([s.toplam_paket for s in sensor_listesi]) or 1 # Bölme hatasını önle
+            maks_paket = max([s.toplam_paket for s in sensor_listesi]) or 1 
             bar_genislik = (cizim_w - 20) / len(sensor_listesi)
             
-            # Bar arkası yatay ızgaralar
+
             for i in range(1, 4):
                 bh_y = bar_y + (bar_h / 4) * i
                 pygame.draw.line(ekran, (30, 40, 50), (cizim_x, bh_y), (cizim_x + cizim_w, bh_y), 1)
@@ -528,13 +515,13 @@ while True:
                 bx = cizim_x + 10 + i * bar_genislik
                 bh = (s.toplam_paket / maks_paket) * (bar_h - 40)
                 
-                # Bar Rengi (Sensör seçiliyse Mor, değilse standart renkler)
+
                 renk = RENK_TURKUAZ if s.batarya_seviyesi > 0 else RENK_KIRMIZI
                 if s.secili: renk = RENK_MOR
                 
                 pygame.draw.rect(ekran, renk, (bx + 2, bar_y + bar_h - bh - 25, bar_genislik - 4, bh), border_radius=3)
                 
-                # Değerleri ve ID'leri yaz
+
                 isim_txt = font_kucuk.render(f"S{s.id}", True, RENK_BEYAZ)
                 deger_txt = font_kucuk.render(f"{int(s.toplam_paket)}", True, RENK_YESIL if s.batarya_seviyesi > 0 else RENK_GRI)
                 
